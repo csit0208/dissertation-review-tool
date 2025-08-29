@@ -1,0 +1,11 @@
+streamlit
+openai
+pdfplumber
+python-docx
+fpdf
+sentence-transformers
+scikit-learn
+language-tool-python
+beautifulsoup4
+requests
+python-dotenv
