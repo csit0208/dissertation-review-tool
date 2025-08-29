@@ -9,3 +9,4 @@ language-tool-python
 beautifulsoup4
 requests
 python-dotenv
+rapidfuzz
