@@ -1,6 +1,5 @@
 import os
 import re
-import language_tool_python
 from openai import OpenAI
 from dotenv import load_dotenv
 
@@ -18,7 +17,6 @@ load_dotenv()
 client = OpenAI()
 
 model = SentenceTransformer('all-MiniLM-L6-v2')
-tool = language_tool_python.LanguageTool('en-US')
 
 REFERENCE_TOPICS = {
     "business": "Business dissertations typically explore topics such as strategic planning, financial modeling, organizational behavior, marketing theory, operational efficiency, or entrepreneurship.",
