@@ -75,11 +75,9 @@ Issues:
         issues = [line[2:].strip() for line in lines if line.startswith("-")]
         return score, len(issues), [{"message": i, "context": "LLM-generated"} for i in issues]
     except Exception as e:
+        # fallback in case of API failure
         return 0.7, 0, []
-
-        })
-    return max(0, 1 - error_rate), errors, issues
-
+     
 def extract_intext_citations(text):
     pattern = r'\(([A-Z][a-zA-Z\-’]+),\s*(\d{4})(?:[a-z])?(?:,\s*p\.?\s*\d+)?\)'
     return re.findall(pattern, text)
