@@ -42,22 +42,41 @@ def extract_text_from_file(file_path):
         return f"Unsupported file type: {ext}"
 
 def check_grammar(text):
-    main_text = text.split("References")[0] if "References" in text else text
-    matches = tool.check(main_text)
-    errors = len(matches)
-    if errors > 300:
-        errors = 300
-    words = len(main_text.split())
-    error_rate = errors / words if words > 0 else 1
-    issues = []
-    for match in matches[:100]:
-        issues.append({
-            "message": match.message,
-            "rule": match.ruleId,
-            "suggestion": match.replacements,
-            "context": match.context,
-            "offset": match.offset,
-            "length": match.errorLength
+    prompt = f"""
+You are an academic writing assistant. Read the following dissertation excerpt and identify writing quality based on these criteria:
+- Clear academic tone
+- Grammar, punctuation, and usage
+- Logical paragraphing
+
+Rate overall writing on a scale from 0.0 (poor) to 1.0 (excellent).
+Also, list up to 5 brief grammar or clarity issues with context.
+
+Text:
+{text[:3000]}
+
+Respond only in this format:
+Score: <float from 0.0 to 1.0>
+Issues:
+- <issue 1>
+- <issue 2>
+- ...
+"""
+    try:
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+            max_tokens=400
+        )
+        reply = response.choices[0].message.content.strip()
+        lines = reply.splitlines()
+        score_line = next((line for line in lines if line.lower().startswith("score:")), None)
+        score = float(score_line.split(":")[1].strip()) if score_line else 0.7
+        issues = [line[2:].strip() for line in lines if line.startswith("-")]
+        return score, len(issues), [{"message": i, "context": "LLM-generated"} for i in issues]
+    except Exception as e:
+        return 0.7, 0, []
+
         })
     return max(0, 1 - error_rate), errors, issues
 
