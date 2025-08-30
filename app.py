@@ -48,7 +48,7 @@ if uploaded_files and reviewer_id and discipline:
         st.subheader("Grammar Issues (Top 10)")
         for issue in result["details"]["grammar_issues"][:10]:
             st.markdown(f"- {issue['message']}")
-            st.caption(f"Suggestion: {issue['suggestion']}")
+            st.caption(f"Suggestion: {issue.get('suggestion', '—')}")
             st.caption(f"Context: {issue['context']}")
 
         st.subheader("Citation Issues")
