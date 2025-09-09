@@ -196,7 +196,8 @@ Accuracy of Outcomes and Conclusions: <MET or UNMET>
 
 def rubric_evaluation(text, grammar_errors, citation_issues, topic, project_type):
     rubric = {}
-    # --- Structure recognition based on project type ---
+
+    # --- Structure Recognition ---
     normalized = text.lower()
 
     if project_type.lower() == "capstone":
@@ -209,7 +210,7 @@ def rubric_evaluation(text, grammar_errors, citation_issues, topic, project_type
             "implications", "recommendations for policy", "recommendations for practice", "recommendations for future work",
             "conclusion"
         ]
-    else:
+    else:  # dissertation
         expected_headings = [
             "background of the study", "problem statement", "research question", "study rationale",
             "significance of the study", "identified gap", "overview of the methodology",
@@ -225,9 +226,16 @@ def rubric_evaluation(text, grammar_errors, citation_issues, topic, project_type
     rubric["_DEBUG_StructureHits"] = matched
     rubric["Organization and Synthesis"] = "MET" if len(matched) >= int(0.6 * len(expected_headings)) else "UNMET"
 
+    # --- LLM-Based Content Alignment and Outcomes ---
     llm_scores = evaluate_with_llm(text, topic)
     rubric.update(llm_scores)
 
+    # --- Writing Mechanics and Citations ---
+    rubric["Writing Mechanics, APA, Citations, Evidence"] = (
+        "MET" if grammar_errors <= 300 and len(citation_issues) <= 10 else "UNMET"
+    )
+
+    # --- Final Decision Summary ---
     unmet = [k for k, v in rubric.items() if v == "UNMET"]
     rubric["Unmet Criteria"] = ", ".join(unmet) if unmet else "None"
 
