@@ -19,10 +19,22 @@ client = OpenAI()
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
 REFERENCE_TOPICS = {
-    "business": "Business dissertations typically explore topics such as strategic planning, financial modeling, organizational behavior, marketing theory, operational efficiency, or entrepreneurship.",
-    "nursing": "Nursing dissertations focus on clinical practice, patient outcomes, healthcare policy, and evidence-based interventions.",
-    "public health": "Public health dissertations analyze population health, epidemiology, community interventions, health equity, and policy outcomes.",
-    "higher education leadership": "Dissertations in higher education leadership should examine institutional governance, leadership development, gender and diversity in academic leadership, and systemic challenges in postsecondary settings."
+    "public administration": "Dissertations in public administration should analyze governance, public policy, administrative law, ethical leadership, and organizational behavior in public sector contexts.",
+    "applied psychology": "Applied psychology dissertations must explore practical applications of psychological theories, including behavioral interventions, assessment techniques, and workplace or clinical solutions.",
+    "behavior analysis": "Behavior analysis research must involve measurable behavior change, reinforcement strategies, functional assessments, and empirical validation of interventions.",
+    "business": "Business dissertations should cover areas such as strategic management, marketing theory, financial analysis, operational efficiency, and leadership practices.",
+    "counseling": "Counseling dissertations should address therapeutic modalities, client outcomes, multicultural competence, mental health diagnostics, and ethical practice.",
+    "education": "Education research should investigate curriculum design, learning theory, educational equity, assessment models, and pedagogical effectiveness.",
+    "human services": "Human services dissertations should evaluate program outcomes, service delivery systems, vulnerable populations, policy impacts, and community engagement.",
+    "public service": "Dissertations in public service must explore civic engagement, nonprofit leadership, service delivery, policy implementation, and public ethics.",
+    "psychology": "Psychology dissertations must include theory-based analysis of cognition, emotion, development, psychopathology, and empirically validated methods.",
+    "information technology": "Information technology research should focus on systems design, cybersecurity, data management, human-computer interaction, and technology integration in organizations.",
+    "emergency management": "Emergency management dissertations must analyze disaster preparedness, crisis communication, risk mitigation, recovery operations, and interagency coordination.",
+    "clinical psychology": "Clinical psychology research must address diagnostic criteria, evidence-based treatment, clinical outcomes, psychopathology, and therapeutic relationships.",
+    "higher education leadership": "Dissertations in higher education leadership should examine institutional governance, leadership development, gender and diversity in academic leadership, and systemic challenges in postsecondary settings. Research may use qualitative, critical, or phenomenological methods to explore how leaders navigate organizational change, equity, and policy in higher education, including for-profit institutions.",
+    "nursing": "Nursing dissertations focus on clinical practice, patient outcomes, healthcare policy, and evidence-based interventions. Research may use qualitative or quantitative methods to explore patient care, health systems, and clinical education.",
+    "public health": "Public health dissertations analyze population health, epidemiology, community interventions, health equity, and policy outcomes. Topics may include disease prevention, health education, or public health program evaluation.",
+    "social work": "Social work dissertations should analyze issues such as client advocacy, mental health policy, child welfare, community engagement, and evidence-based interventions across diver
 }
 
 def extract_text_from_file(file_path):
