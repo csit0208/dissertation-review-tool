@@ -225,8 +225,21 @@ matched = [h for h in expected_headings if h in normalized]
 rubric["_DEBUG_StructureHits"] = matched
 rubric["Organization and Synthesis"] = "MET" if len(matched) >= int(0.6 * len(expected_headings)) else "UNMET"
 
+# Add LLM-based evaluations
 llm_scores = evaluate_with_llm(text, topic)
 rubric.update(llm_scores)
+
+# Faculty comment
+unmet = [k for k, v in rubric.items() if v == "UNMET"]
+rubric["Unmet Criteria"] = ", ".join(unmet) if unmet else "None"
+
+rubric["Faculty Comment"] = (
+    "All rubric criteria were met. No further revision recommended."
+    if not unmet else
+    "Some rubric criteria were unmet. Please review the structure, clarity, or alignment based on feedback above."
+)
+
+return rubric
 
     normalized = text.lower()
 
