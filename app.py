@@ -12,7 +12,7 @@ with st.sidebar:
     st.header("Reviewer Info")
     reviewer_id = st.text_input("Faculty Reviewer Name or ID")
     discipline = st.selectbox("Select Discipline", [
-        "public administration", "applied psychology", "behavior analysis",
+        "public administration", "social work", "applied psychology", "behavior analysis",
         "business", "counseling", "education", "human services",
         "public service", "psychology", "information technology",
         "emergency management", "clinical psychology", "higher education leadership",
