@@ -194,9 +194,39 @@ Accuracy of Outcomes and Conclusions: <MET or UNMET>
             "_DEBUG_LLM_Error": str(e)
         }
 
-def rubric_evaluation(text, grammar_errors, citation_issues, topic):
+def rubric_evaluation(text, grammar_errors, citation_issues, topic, project_type):
     rubric = {}
-    rubric.update(evaluate_with_llm(text, topic))
+    # --- Structure recognition based on project type ---
+normalized = text.lower()
+
+if project_type.lower() == "capstone":
+    expected_headings = [
+        "overview of the project", "problem statement and purpose", "theoretical framework", "project context",
+        "historical background", "synthesis of the scholarly literature", "synthesis of the practitioner literature",
+        "alignment of the project with the literature", "project questions", "project design", "stakeholders",
+        "participants", "target audience", "role of the researcher", "study protocol", "sample",
+        "data collection", "ethical considerations", "data analysis", "outcomes and findings", "application and benefits",
+        "implications", "recommendations for policy", "recommendations for practice", "recommendations for future work",
+        "conclusion"
+    ]
+else:  # Dissertation headings
+    expected_headings = [
+        "background of the study", "problem statement", "research question", "study rationale",
+        "significance of the study", "identified gap", "overview of the methodology",
+        "organization of the remainder of the study", "theoretical framework", "review of the literature",
+        "synthesis of the literature", "research opportunities", "knowledge gaps", "proposed research",
+        "sampling", "sample size", "data collection", "data analysis", "ethical considerations",
+        "description of the sample", "presentation of data", "summary of findings", "limitations",
+        "implications for policy", "recommendations for future research", "findings in context",
+        "conclusion"
+    ]
+
+matched = [h for h in expected_headings if h in normalized]
+rubric["_DEBUG_StructureHits"] = matched
+rubric["Organization and Synthesis"] = "MET" if len(matched) >= int(0.6 * len(expected_headings)) else "UNMET"
+
+llm_scores = evaluate_with_llm(text, topic)
+rubric.update(llm_scores)
 
     normalized = text.lower()
 
