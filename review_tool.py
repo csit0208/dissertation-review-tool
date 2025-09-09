@@ -197,9 +197,10 @@ Accuracy of Outcomes and Conclusions: <MET or UNMET>
 def rubric_evaluation(text, grammar_errors, citation_issues, topic, project_type):
     rubric = {}
 
-    # --- Structure Recognition ---
+    # --- Normalize Text ---
     normalized = text.lower()
 
+    # --- Section Headings by Project Type ---
     if project_type.lower() == "capstone":
         expected_headings = [
             "overview of the project", "problem statement and purpose", "theoretical framework", "project context",
@@ -210,7 +211,7 @@ def rubric_evaluation(text, grammar_errors, citation_issues, topic, project_type
             "implications", "recommendations for policy", "recommendations for practice", "recommendations for future work",
             "conclusion"
         ]
-    else:  # dissertation
+    else:
         expected_headings = [
             "background of the study", "problem statement", "research question", "study rationale",
             "significance of the study", "identified gap", "overview of the methodology",
@@ -222,56 +223,39 @@ def rubric_evaluation(text, grammar_errors, citation_issues, topic, project_type
             "conclusion"
         ]
 
+    # --- Structure Detection ---
     matched = [h for h in expected_headings if h in normalized]
     rubric["_DEBUG_StructureHits"] = matched
     rubric["Organization and Synthesis"] = "MET" if len(matched) >= int(0.6 * len(expected_headings)) else "UNMET"
 
-    # --- LLM-Based Content Alignment and Outcomes ---
+    # --- LLM Content Evaluation ---
     llm_scores = evaluate_with_llm(text, topic)
     rubric.update(llm_scores)
 
-    # --- Writing Mechanics and Citations ---
+    # --- Mechanics & APA ---
+    avg_errors_per_page = grammar_errors / max(1, (len(text) // 250))
+    critical_citation_issues = [
+        issue for issue in citation_issues
+        if "not in reference list" in issue or "not cited in text" in issue
+    ]
     rubric["Writing Mechanics, APA, Citations, Evidence"] = (
-        "MET" if grammar_errors <= 300 and len(citation_issues) <= 10 else "UNMET"
+        "MET" if avg_errors_per_page <= 5 and len(critical_citation_issues) <= 5 else "UNMET"
     )
 
-    # --- Final Decision Summary ---
+    # --- Faculty Comment ---
     unmet = [k for k, v in rubric.items() if v == "UNMET"]
     rubric["Unmet Criteria"] = ", ".join(unmet) if unmet else "None"
 
-    rubric["Faculty Comment"] = (
-        "All rubric criteria were met. No further revision recommended."
-        if not unmet else
-        "Some rubric criteria were unmet. Please review the structure, clarity, or alignment based on feedback above."
-    )
+    if "Organization and Synthesis" in unmet:
+        rubric["Faculty Comment"] = "Consider clarifying or labeling section transitions to reflect APA structure more clearly."
+    elif "Writing Mechanics, APA, Citations, Evidence" in unmet:
+        rubric["Faculty Comment"] = "Writing mechanics or citation formatting require moderate revision."
+    elif "Accuracy of Outcomes and Conclusions" in unmet:
+        rubric["Faculty Comment"] = "Ensure that conclusions are tightly tied to presented results, even in qualitative analysis."
+    else:
+        rubric["Faculty Comment"] = "Dissertation meets expectations for structure, alignment, conclusions, and APA standards."
 
     return rubric
-
-    normalized = text.lower()
-
-    structure_terms = [
-        "introduction",
-        "literature review",
-        "review of the literature",
-        "methodology",
-        "results",
-        "presentation of the data",
-        "discussion",
-        "conclusion",
-        "recommendations",
-        "references"
-    ]
-
-    structure_hits = []
-    for section in structure_terms:
-        pattern = re.sub(r"\s+", r"\\s+", section)
-        if re.search(pattern, normalized):
-            structure_hits.append(section)
-
-    rubric["_DEBUG_StructureHits"] = structure_hits
-    rubric["Organization and Synthesis"] = (
-        "MET" if len(structure_hits) >= 4 else "UNMET"
-    )
 
     avg_errors_per_page = grammar_errors / max(1, (len(text) // 250))
     critical_citation_issues = [
