@@ -6,7 +6,6 @@ from dotenv import load_dotenv
 import pdfplumber
 import docx
 from sentence_transformers import SentenceTransformer, util
-import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
 import csv
@@ -15,7 +14,6 @@ from fpdf import FPDF
 
 load_dotenv()
 client = OpenAI()
-
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
 REFERENCE_TOPICS = {
@@ -31,12 +29,11 @@ REFERENCE_TOPICS = {
     "information technology": "Information technology research should focus on systems design, cybersecurity, data management, human-computer interaction, and technology integration in organizations.",
     "emergency management": "Emergency management dissertations must analyze disaster preparedness, crisis communication, risk mitigation, recovery operations, and interagency coordination.",
     "clinical psychology": "Clinical psychology research must address diagnostic criteria, evidence-based treatment, clinical outcomes, psychopathology, and therapeutic relationships.",
-    "higher education leadership": "Dissertations in higher education leadership should examine institutional governance, leadership development, gender and diversity in academic leadership, and systemic challenges in postsecondary settings. Research may use qualitative, critical, or phenomenological methods to explore how leaders navigate organizational change, equity, and policy in higher education, including for-profit institutions.",
-    "nursing": "Nursing dissertations focus on clinical practice, patient outcomes, healthcare policy, and evidence-based interventions. Research may use qualitative or quantitative methods to explore patient care, health systems, and clinical education.",
-    "public health": "Public health dissertations analyze population health, epidemiology, community interventions, health equity, and policy outcomes. Topics may include disease prevention, health education, or public health program evaluation.",
-    "social work": "Social work dissertations should analyze issues such as client advocacy, mental health policy, child welfare, community engagement, and evidence-based interventions across diver
+    "higher education leadership": "Dissertations in higher education leadership should examine institutional governance, leadership development, gender and diversity in academic leadership, and systemic challenges in postsecondary settings.",
+    "nursing": "Nursing dissertations focus on clinical practice, patient outcomes, healthcare policy, and evidence-based interventions.",
+    "public health": "Public health dissertations analyze population health, epidemiology, community interventions, health equity, and policy outcomes.",
+    "social work": "Social work dissertations should analyze issues such as client advocacy, mental health policy, child welfare, community engagement, and evidence-based interventions across diverse populations."
 }
-
 def extract_text_from_file(file_path):
     ext = os.path.splitext(file_path)[1].lower()
     if ext == ".pdf":
@@ -50,7 +47,6 @@ def extract_text_from_file(file_path):
             return f.read()
     else:
         return f"Unsupported file type: {ext}"
-
 def check_grammar(text):
     prompt = f"""
 You are an academic writing assistant. Read the following dissertation excerpt and identify writing quality based on these criteria:
@@ -84,10 +80,8 @@ Issues:
         score = float(score_line.split(":")[1].strip()) if score_line else 0.7
         issues = [line[2:].strip() for line in lines if line.startswith("-")]
         return score, len(issues), [{"message": i, "context": "LLM-generated"} for i in issues]
-    except Exception as e:
-        # fallback in case of API failure
+    except Exception:
         return 0.7, 0, []
-     
 def extract_intext_citations(text):
     pattern = r'\(([A-Z][a-zA-Z\-’]+),\s*(\d{4})(?:[a-z])?(?:,\s*p\.?\s*\d+)?\)'
     return re.findall(pattern, text)
@@ -138,9 +132,7 @@ def advanced_validate_apa_citations(text):
     if unmatched_refs:
         issues.append(f"Reference entries not cited in text: {set(unmatched_refs)}")
         score -= 0.25
-    score = max(0.0, score)
-    return round(score, 2), issues
-
+    return round(max(0.0, score), 2), issues
 def evaluate_with_llm(text, discipline):
     prompt = f"""
 You are evaluating a doctoral dissertation in the field of {discipline}.
@@ -163,7 +155,6 @@ Respond only using this exact format:
 Content Alignment: <MET or UNMET>
 Accuracy of Outcomes and Conclusions: <MET or UNMET>
 """
-
     try:
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
@@ -193,14 +184,10 @@ Accuracy of Outcomes and Conclusions: <MET or UNMET>
             "Accuracy of Outcomes and Conclusions": "UNMET",
             "_DEBUG_LLM_Error": str(e)
         }
-
 def rubric_evaluation(text, grammar_errors, citation_issues, topic, project_type):
     rubric = {}
-
-    # --- Normalize Text ---
     normalized = text.lower()
 
-    # --- Section Headings by Project Type ---
     if project_type.lower() == "capstone":
         expected_headings = [
             "overview of the project", "problem statement and purpose", "theoretical framework", "project context",
@@ -223,26 +210,24 @@ def rubric_evaluation(text, grammar_errors, citation_issues, topic, project_type
             "conclusion"
         ]
 
-    # --- Structure Detection ---
     matched = [h for h in expected_headings if h in normalized]
     rubric["_DEBUG_StructureHits"] = matched
     rubric["Organization and Synthesis"] = "MET" if len(matched) >= int(0.6 * len(expected_headings)) else "UNMET"
 
-    # --- LLM Content Evaluation ---
-    llm_scores = evaluate_with_llm(text, topic)
-    rubric.update(llm_scores)
+    # Add LLM scoring
+    rubric.update(evaluate_with_llm(text, topic))
 
-    # --- Mechanics & APA ---
+    # Mechanics and APA
     avg_errors_per_page = grammar_errors / max(1, (len(text) // 250))
-    critical_citation_issues = [
+    critical_issues = [
         issue for issue in citation_issues
         if "not in reference list" in issue or "not cited in text" in issue
     ]
     rubric["Writing Mechanics, APA, Citations, Evidence"] = (
-        "MET" if avg_errors_per_page <= 5 and len(critical_citation_issues) <= 5 else "UNMET"
+        "MET" if avg_errors_per_page <= 5 and len(critical_issues) <= 5 else "UNMET"
     )
 
-    # --- Faculty Comment ---
+    # Faculty comment
     unmet = [k for k, v in rubric.items() if v == "UNMET"]
     rubric["Unmet Criteria"] = ", ".join(unmet) if unmet else "None"
 
@@ -256,38 +241,18 @@ def rubric_evaluation(text, grammar_errors, citation_issues, topic, project_type
         rubric["Faculty Comment"] = "Dissertation meets expectations for structure, alignment, conclusions, and APA standards."
 
     return rubric
-
-    avg_errors_per_page = grammar_errors / max(1, (len(text) // 250))
-    critical_citation_issues = [
-        issue for issue in citation_issues
-        if "not in reference list" in issue or "not cited in text" in issue
-    ]
-
-    rubric["Writing Mechanics, APA, Citations, Evidence"] = (
-        "MET" if avg_errors_per_page <= 5 and len(critical_citation_issues) <= 5 else "UNMET"
-    )
-
-    if rubric["Organization and Synthesis"] == "UNMET":
-        rubric["Faculty Comment"] = "Consider clarifying or labeling section transitions to reflect APA structure more clearly (e.g., Introduction, Methodology, etc.)."
-    elif rubric["Writing Mechanics, APA, Citations, Evidence"] == "UNMET":
-        rubric["Faculty Comment"] = "Writing mechanics or citation formatting require moderate revision."
-    elif rubric["Accuracy of Outcomes and Conclusions"] == "UNMET":
-        rubric["Faculty Comment"] = "Ensure that conclusions are tightly tied to presented results, even in qualitative analysis."
-    else:
-        rubric["Faculty Comment"] = "Dissertation meets expectations for structure, alignment, conclusions, and APA standards."
-
-    return rubric
-
-def evaluate_dissertation(text, topic):
+def evaluate_dissertation(text, topic, project_type):
     grammar_score, grammar_errors, grammar_issues = check_grammar(text)
     citation_score, citation_issues = advanced_validate_apa_citations(text)
-    rubric = rubric_evaluation(text, grammar_errors, citation_issues, topic)
+    rubric = rubric_evaluation(text, grammar_errors, citation_issues, topic, project_type)
+
     met_count = sum(1 for v in rubric.values() if v == "MET")
     decision = (
         "Approved" if met_count == 4 else
         "Needs Further Review" if met_count == 3 else
         "Not Approved"
     )
+
     overall = round((grammar_score * 0.3 + citation_score * 0.3 + (met_count / 4) * 0.4), 2)
 
     return {
@@ -304,7 +269,6 @@ def evaluate_dissertation(text, topic):
             "citation_issues": citation_issues
         }
     }
-
 def export_to_csv(file_path, topic, result, reviewer="AutoReviewer", output_path="dissertation_reviews.csv"):
     headers = [
         "timestamp", "reviewer", "file", "discipline", "decision",
@@ -331,7 +295,6 @@ def export_to_csv(file_path, topic, result, reviewer="AutoReviewer", output_path
         if not file_exists:
             writer.writerow(headers)
         writer.writerow(row)
-
 def export_to_pdf(file_path, topic, result, reviewer="AutoReviewer", output_dir="."):
     pdf = FPDF()
     pdf.add_page()
